@@ -26,9 +26,11 @@ flowchart LR
     D -->|65Grid 母片超取樣| E["富士膠片模擬輸出 (Rec.709)"]
 ```
 
-藉由將 **65Grid 高精度母片** 超取樣（Supersampling）至手機端最流暢相容的 **33Grid**，消除非線性插值色階斷層，同時將冗長檔名精簡為手機 App 一眼可辨識的格式。
+藉由將 **65Grid 高精度母片** 超取樣（Supersampling）至手機端最流暢相容的 **33Grid**，消除非線性插值色階斷層，同時針對手機介面字數限制最佳化檔名，在選單中一目了然。
 
 ## ✨ 特色亮點
+
+* **針對 Snapseed 介面寬度最佳化檔名**：考量 Snapseed 預覽列僅能顯示約 9 個英文字元寬度（超過即縮略為 `…`），檔名捨棄冗餘編號，直接將 **4 字中文適用情境** 置於最前方（如 `人文街拍_Classic-Neg.cube`），未點擊時即可完整辨識情境，點擊後可檢視完整官方軟片名稱。
 
 * **零依賴重型函式庫**：僅依賴 `numpy`，徹底移除 `scipy`，輕量快速。
 
@@ -45,8 +47,6 @@ flowchart LR
   * 1D 軸預計算將 sRGB 指數解碼運算從 107,811 次降至 33 次。
 
   * 多檔案批次轉換時，跨檔案索引與權重快取複用（耗時趨近純 I/O）。
-
-* **手機友善檔名**：自動去除 `FLog2_to_`、`_33grid_V.1.00` 等長前綴與字尾，並同步重寫內部 `TITLE` 標籤。
 
 ## 🚀 快速上手
 
@@ -78,22 +78,24 @@ python convert_flog2.py
 
 轉換完成後，產出的 `.cube` 檔案將存放於 `Fuji_LUT_Best_33Grid/`。
 
-## 📱 檔名與軟片模擬對照表
+## 📱 情境導向命名與對照表
 
-轉換後的檔案已自動精簡檔名，方便在 Snapseed 或行動裝置剪輯軟體中預覽選取：
+檔案名稱採用 `四字情境_官方模擬名稱.cube` 結構，確保在 Snapseed 僅 9 個英文字元寬度的縮略預覽列中，最關鍵的**前 4 個中文字情境**能完整顯示不被截斷：
 
-| 輸出短檔名 | 原官方檔名 | 建議適用情境 |
-| ----- | ----- | ----- |
-| `Classic-Neg.cube` | `FLog2_to_CLASSIC-Neg._65grid_V.1.00.cube` | **街拍神色**，高反差、冷暖對比強烈、獨特綠色調 |
-| `Reala-Ace.cube` | `FLog2_to_REALA-ACE_65grid_V.1.00.cube` | 富士最新旗艦色彩，發色自然立體，通透乾淨 |
-| `Classic-Chrome.cube` | `FLog2_to_CLASSIC-CHROME_65grid_V.1.00.cube` | 紀實人文、低飽和雜誌文青感 |
-| `Astia.cube` | `FLog2_to_ASTIA_65grid_V.1.00.cube` | 柔和高光與細膩膚色，人像與家庭日常首選 |
-| `Provia.cube` | `FLog2_to_PROVIA_65grid_V.1.00.cube` | 富士標準正片，平衡且忠實呈現現場色彩 |
-| `Velvia.cube` | `FLog2_to_Velvia_65grid_V.1.00.cube` | 風景專用，藍天與綠地具備極高飽和度 |
-| `Pro-Neg-Std.cube` | `FLog2_to_PRO-Neg.Std_65grid_V.1.00.cube` | 專業負片標準，階調柔和，適合棚拍控光人像 |
-| `Eterna.cube` | `FLog2_to_ETERNA_65grid_V.1.00.cube` | 電影正片色調，低對比度與平順的高光滾降 |
-| `Eterna-BB.cube` | `FLog2_to_ETERNA-BB_65grid_V.1.00.cube` | 漂白效果（Bleach Bypass），高對比低飽和重工業風 |
-| `Acros.cube` | `FLog2_to_ACROS_65grid_V.1.00.cube` | 細膩層次與立體感兼具的高質感黑白 |
+| 輸出情境檔名 | Snapseed 縮略預覽 | 原官方檔名 | 建議適用情境與色調特色 | 
+| ----- | ----- | ----- | ----- | 
+| `人文街拍_Classic-Neg.cube` | `人文街拍_…` | `FLog2_to_CLASSIC-Neg._65grid_V.1.00.cube` | **街拍神色**，高反差、冷暖對比強烈、獨特綠色調與復古底片感 | 
+| `真實紀實_Classic-Chrome.cube` | `真實紀實_…` | `FLog2_to_CLASSIC-CHROME_65grid_V.1.00.cube` | 紀實攝影必備，低飽和、微冷調雜誌文青感 | 
+| `自然通透_Reala-Ace.cube` | `自然通透_…` | `FLog2_to_REALA-ACE_65grid_V.1.00.cube` | 富士最新旗艦色彩，色彩忠實自然、階調立體通透 | 
+| `柔和人像_Astia.cube` | `柔和人像_…` | `FLog2_to_ASTIA_65grid_V.1.00.cube` | 柔和高光與紅潤膚色表現，家庭生活與人物拍攝首選 | 
+| `標準正片_Provia.cube` | `標準正片_…` | `FLog2_to_PROVIA_65grid_V.1.00.cube` | 富士經典標準色，發色均衡，各類生活記錄皆適宜 | 
+| `濃郁風景_Velvia.cube` | `濃郁風景_…` | `FLog2_to_Velvia_65grid_V.1.00.cube` | 極高色彩飽和度，適合晴天、藍天、草地與夕陽大景 | 
+| `棚拍人像_Pro-Neg-Std.cube` | `棚拍人像_…` | `FLog2_to_PRO-Neg.Std_65grid_V.1.00.cube` | 極柔和的陰影階調與低對比，適合控光人像與微距特寫 | 
+| `低調電影_Eterna.cube` | `低調電影_…` | `FLog2_to_ETERNA_65grid_V.1.00.cube` | 經典電影正片色調，低反差、低動態衝擊、平滑高光過渡 | 
+| `重工業風_Eterna-BB.cube` | `重工業風_…` | `FLog2_to_ETERNA-BB_65grid_V.1.00.cube` | 漂白效果（Bleach Bypass），極低飽和伴隨強烈對比的金屬冷硬質感 | 
+| `經典黑白_Acros.cube` | `經典黑白_…` | `FLog2_to_ACROS_65grid_V.1.00.cube` | 頂級黑白底片模擬，暗部細節豐富且高光立體分明 | 
+| `標準還原_Rec709-Std.cube` | `標準還原_…` | `FLog2_to_FLog2-709_65grid_V.1.00.cube` | 基準技術轉換檔，不帶軟片風格濾鏡之標準 Rec.709 色彩 | 
+| `寬動態域_Rec709-WDR.cube` | `寬動態域_…` | `FLog2_to_WDR-709_65grid_V.1.00.cube` | 具備高光滾降保護的寬動態標準色彩還原 | 
 
 ## 📲 如何在 Snapseed 中套用
 
@@ -103,9 +105,9 @@ python convert_flog2.py
 
 3. 點選下方 **「工具」** → **「LUT」**。
 
-4. 點選「開啟檔案」選取剛剛匯入的 `.cube` 檔（如 `Classic-Neg.cube`）。
+4. 點選「開啟檔案」選取目標情境檔案（例如在街拍場景點選 `人文街拍_Classic-Neg.cube`）。
 
-5. 根據當前光線環境，左右滑動調整套用強度（建議強度：`70% ~ 100%`）。
+5. 根據現場光線與對比偏好，左右滑動調整套用強度（建議強度：`70% ~ 100%`）。
 
 ## 📄 License
 
