@@ -2,20 +2,20 @@ import re
 from pathlib import Path
 import numpy as np
 
-# 短檔名映射表
+# 拔除編號，前 4 個中文字情境在 Snapseed 9 字元寬度限制下可 100% 完整顯示
 SHORT_NAMES = {
-    'CLASSIC-Neg.': 'Classic-Neg',
-    'CLASSIC-CHROME': 'Classic-Chrome',
-    'REALA-ACE': 'Reala-Ace',
-    'PROVIA': 'Provia',
-    'ASTIA': 'Astia',
-    'Velvia': 'Velvia',
-    'PRO-Neg.Std': 'Pro-Neg-Std',
-    'ETERNA': 'Eterna',
-    'ETERNA-BB': 'Eterna-BB',
-    'ACROS': 'Acros',
-    'FLog2-709': 'Rec709-Std',
-    'WDR-709': 'Rec709-WDR',
+    'CLASSIC-Neg.': '人文街拍_Classic-Neg',
+    'CLASSIC-CHROME': '真實紀實_Classic-Chrome',
+    'REALA-ACE': '自然通透_Reala-Ace',
+    'ASTIA': '柔和人像_Astia',
+    'PROVIA': '標準正片_Provia',
+    'Velvia': '濃郁風景_Velvia',
+    'PRO-Neg.Std': '棚拍人像_Pro-Neg-Std',
+    'ETERNA': '低調電影_Eterna',
+    'ETERNA-BB': '重工業風_Eterna-BB',
+    'ACROS': '經典黑白_Acros',
+    'FLog2-709': '標準還原_Rec709-Std',
+    'WDR-709': '寬動態域_Rec709-WDR',
 }
 
 _NAME_PATTERN = re.compile(r'FLog2_to_(.+?)_(?:65|33)grid')
