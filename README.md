@@ -87,13 +87,6 @@ flowchart LR
 
 ## 🛠️ 給進階玩家與開發者的百寶箱
 
-### 想架設屬於自己的免費線上轉換站？（GitHub Pages 零設定部署）
-這個網頁工具沒有使用任何複雜框架，直接 Fork 本專案就能在 30 秒內擁有你自己的專屬網址：
-1. 點擊右上角 **Fork** 複製一份專案到你的 GitHub 帳號。
-2. 進入儲存庫的 **Settings** → 左側點選 **Pages**。
-3. 在 **Build and deployment** 將 **Source** 選為 **Deploy from a branch**，分支選擇 **`main`** 與 **`/ (root)`** 後按下 **Save**。
-4. 等待半分鐘，打開 `https://<你的帳號>.github.io/fuji-lut-for-mobile/` 即可隨時隨地使用！
-
 ### 想在電腦上一次把整包 12 顆濾鏡全部轉好？（Python 極速批次版）
 如果你習慣用電腦整理整包檔案再一次傳進手機，本專案也附帶超高速 Python 批次轉換腳本：
 
