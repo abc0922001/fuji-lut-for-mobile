@@ -1,0 +1,363 @@
+<!DOCTYPE html>
+<html lang="zh-Hant-TW">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="color-scheme" content="light dark">
+  <meta name="text-scale" content="scale">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; img-src 'self' blob: data:; worker-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self'; connect-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'">
+  <title>FujiLUT for Mobile｜富士 F-Log2 / F-Log 手機濾鏡純前端轉換工具</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 32 32%27%3E%3Crect width=%2732%27 height=%2732%27 rx=%276%27 fill=%27%230b6b4f%27/%3E%3Ccircle cx=%2716%27 cy=%2716%27 r=%277%27 fill=%27none%27 stroke=%27%23ffffff%27 stroke-width=%272.5%27/%3E%3Ccircle cx=%2724%27 cy=%278%27 r=%272.2%27 fill=%27%23e85538%27/%3E%3C/svg%3E">
+  <link rel="stylesheet" href="./css/styles.css">
+  <script type="module" src="./js/app.js"></script>
+</head>
+<body>
+  <a href="#main-content" class="skip-link">跳至主要內容</a>
+
+  <div class="page-shell">
+    <header class="hero-header">
+      <div class="film-rebate" aria-hidden="true">
+        <span class="rebate-dot"></span>
+        <span>FUJIFILM 3D LUT</span>
+        <span>·</span>
+        <span>sRGB / Rec.709 BAKE</span>
+        <span>·</span>
+        <span>100% LOCAL WORKER</span>
+      </div>
+      <h1>富士 F-Log2 手機濾鏡轉換器</h1>
+      <p class="hero-lead">
+        在瀏覽器本地端將自行下載的富士官方 <code>.cube</code> 母片，經由白皮書雙精度色域矩陣與四面體超取樣烘焙為手機直出照片（Snapseed、Lightroom Mobile、VN）適用的輕量化濾鏡。全程零上傳、零外部連線。
+      </p>
+    </header>
+
+    <main id="main-content" class="main-stack">
+      <form id="converter-form" novalidate aria-labelledby="form-heading">
+        <h2 id="form-heading" class="visually-hidden">LUT 上傳與轉換參數設定</h2>
+
+        <div class="options-stack">
+          <!-- 步驟一：單檔上傳與自動解析 -->
+          <section class="card" aria-labelledby="upload-heading">
+            <span class="section-eyebrow">STEP 01 · SOURCE CUBE</span>
+            <h2 id="upload-heading">上傳富士原始 .cube 母片</h2>
+            <p class="field-hint" id="cube-upload-hint">
+              請從富士官網下載 3D LUT 壓縮包（如 <code>65Grid/F-Log2</code> 內的 <code>FLog2_to_CLASSIC-Neg._65grid_V.1.00.cube</code>），拖曳或點擊下方區域選取單一檔案。
+            </p>
+
+            <div class="upload-field">
+              <input
+                type="file"
+                id="cube-file-input"
+                name="cubeFile"
+                class="sr-file-input"
+                accept=".cube,text/plain,application/octet-stream"
+                required
+                aria-invalid="false"
+                aria-describedby="cube-upload-hint"
+                data-error="cube-file-error"
+              >
+              <label for="cube-file-input" class="drop-zone" id="cube-drop-zone">
+                <svg class="upload-icon" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                  <polyline points="17 8 12 3 7 8"/>
+                  <line x1="12" y1="3" x2="12" y2="15"/>
+                </svg>
+                <span class="drop-zone-title" id="drop-zone-title">點擊選取或拖曳單一 .cube 檔案至此</span>
+                <span class="drop-zone-hint">相容 65Grid / 33Grid / 17Grid 母片 · 檔案不會離開您的裝置</span>
+              </label>
+            </div>
+            <div id="cube-file-error" class="error-msg">
+              <span role="img" aria-label="錯誤">⚠</span> <span id="cube-file-error-text">請先選取有效的富士 .cube 3D LUT 檔案。</span>
+            </div>
+
+            <div id="cube-meta-panel" class="cube-meta-panel" hidden>
+              <dl class="meta-grid">
+                <div class="meta-item">
+                  <dt>原始檔案名稱</dt>
+                  <dd id="meta-filename">—</dd>
+                </div>
+                <div class="meta-item">
+                  <dt>偵測網格尺寸</dt>
+                  <dd id="meta-grid">—</dd>
+                </div>
+                <div class="meta-item">
+                  <dt>原始 TITLE 標頭</dt>
+                  <dd id="meta-title">—</dd>
+                </div>
+              </dl>
+              <p id="meta-preset-desc" class="preset-scene-note" hidden></p>
+            </div>
+          </section>
+
+          <!-- 步驟二：可自訂轉換選項 -->
+          <section class="card" aria-labelledby="options-heading">
+            <span class="section-eyebrow">STEP 02 · COLOR PIPELINE &amp; NAMING</span>
+            <h2 id="options-heading">調整色彩管線與輸出命名</h2>
+
+            <div class="options-stack">
+              <!-- 來源曲線 -->
+              <fieldset class="control-group">
+                <legend class="control-legend">來源對數曲線（Input Log）</legend>
+                <span class="field-hint">上傳後會依檔名（<code>FLog2_</code>／<code>FLog_</code>）自動預選，亦可手動切換。</span>
+                <div class="radio-cards">
+                  <label class="radio-card" for="curve-flog2">
+                    <input type="radio" id="curve-flog2" name="inputCurve" value="flog2" checked aria-invalid="false">
+                    <span class="radio-card-text">
+                      <span class="radio-card-title">F-Log2 (BT.2020)</span>
+                      <span class="radio-card-sub">預設 · X-H2S / X-T5 / X100VI / GFX 等新世代母片</span>
+                    </span>
+                  </label>
+                  <label class="radio-card" for="curve-flog">
+                    <input type="radio" id="curve-flog" name="inputCurve" value="flog" aria-invalid="false">
+                    <span class="radio-card-text">
+                      <span class="radio-card-title">F-Log (BT.2020)</span>
+                      <span class="radio-card-sub">一代白皮書公式 · X-T3 / X-T4 / X-S10 母片</span>
+                    </span>
+                  </label>
+                </div>
+              </fieldset>
+
+              <!-- 輸出網格尺寸 -->
+              <fieldset class="control-group">
+                <legend class="control-legend">輸出網格尺寸（Output Grid）</legend>
+                <span class="field-hint">33Grid 兼顧色彩平滑度與手機修圖軟體載入效能。</span>
+                <div class="radio-cards">
+                  <label class="radio-card" for="grid-17">
+                    <input type="radio" id="grid-17" name="targetSize" value="17" aria-invalid="false">
+                    <span class="radio-card-text">
+                      <span class="radio-card-title">17Grid（超輕量）</span>
+                      <span class="radio-card-sub">4,913 點 · 約 120 KB，極速預覽</span>
+                    </span>
+                  </label>
+                  <label class="radio-card" for="grid-33">
+                    <input type="radio" id="grid-33" name="targetSize" value="33" checked aria-invalid="false">
+                    <span class="radio-card-text">
+                      <span class="radio-card-title">33Grid（手機推薦）</span>
+                      <span class="radio-card-sub">35,937 點 · 約 880 KB，Snapseed 最佳相容</span>
+                    </span>
+                  </label>
+                  <label class="radio-card" for="grid-65">
+                    <input type="radio" id="grid-65" name="targetSize" value="65" aria-invalid="false">
+                    <span class="radio-card-text">
+                      <span class="radio-card-title">65Grid（最高精度）</span>
+                      <span class="radio-card-sub">274,625 點 · 約 6.8 MB，桌面或後期調光</span>
+                    </span>
+                  </label>
+                </div>
+              </fieldset>
+
+              <!-- 高光延展 / 線性曝光增益 -->
+              <div class="slider-block">
+                <div class="slider-header">
+                  <label class="control-label" for="linear-gain">高光延展／線性曝光增益（Linear Gain）</label>
+                  <div class="slider-readout-group">
+                    <output class="slider-output" for="linear-gain" id="linear-gain-output">1.00x</output>
+                    <button type="button" class="chip-btn" id="reset-gain-btn">重設 1.0x</button>
+                  </div>
+                </div>
+                <span class="field-hint" id="linear-gain-hint">
+                  預設 <code>1.00x</code> 忠實遵循官方白皮書；若手機直出 JPG 套用後亮部偏灰，可適度提高將白點推入母片高光滾降區。
+                </span>
+                <input
+                  type="range"
+                  id="linear-gain"
+                  name="linearGain"
+                  min="0.8"
+                  max="2.5"
+                  step="0.05"
+                  value="1"
+                  aria-describedby="linear-gain-hint"
+                  aria-valuetext="1.00 倍（忠實白皮書）"
+                >
+              </div>
+
+              <!-- 濾鏡混合強度 -->
+              <div class="slider-block">
+                <div class="slider-header">
+                  <label class="control-label" for="lut-intensity">濾鏡混合強度（Intensity）</label>
+                  <div class="slider-readout-group">
+                    <output class="slider-output" for="lut-intensity" id="lut-intensity-output">100%</output>
+                    <button type="button" class="chip-btn" id="reset-intensity-btn">重設 100%</button>
+                  </div>
+                </div>
+                <span class="field-hint" id="lut-intensity-hint">
+                  將轉換後的富士色彩與原始 sRGB 恆等點做線性內插，適合預先烘焙清淡日常風格。
+                </span>
+                <input
+                  type="range"
+                  id="lut-intensity"
+                  name="intensity"
+                  min="10"
+                  max="100"
+                  step="5"
+                  value="100"
+                  aria-describedby="lut-intensity-hint"
+                  aria-valuetext="100%"
+                >
+              </div>
+
+              <!-- 輸出檔名與 TITLE 設定 -->
+              <fieldset class="control-group">
+                <legend class="control-legend">輸出檔名與 TITLE 命名模式</legend>
+                <span class="field-hint">Snapseed 濾鏡縮圖列僅顯示約 9 個半形字元寬度，前置 4 字情境可避免關鍵字被截斷。</span>
+                <div class="radio-cards">
+                  <label class="radio-card" for="naming-short">
+                    <input type="radio" id="naming-short" name="namingMode" value="short" checked aria-invalid="false">
+                    <span class="radio-card-text">
+                      <span class="radio-card-title">Snapseed 情境短名</span>
+                      <span class="radio-card-sub" id="naming-short-example">例：人文街拍_Classic-Neg</span>
+                    </span>
+                  </label>
+                  <label class="radio-card" for="naming-english">
+                    <input type="radio" id="naming-english" name="namingMode" value="english" aria-invalid="false">
+                    <span class="radio-card-text">
+                      <span class="radio-card-title">官方精簡英文</span>
+                      <span class="radio-card-sub" id="naming-english-example">例：Classic-Neg</span>
+                    </span>
+                  </label>
+                  <label class="radio-card" for="naming-custom">
+                    <input type="radio" id="naming-custom" name="namingMode" value="custom" aria-invalid="false">
+                    <span class="radio-card-text">
+                      <span class="radio-card-title">自訂名稱</span>
+                      <span class="radio-card-sub">手動輸入專屬濾鏡名稱</span>
+                    </span>
+                  </label>
+                </div>
+
+                <div id="custom-name-box" class="custom-name-box" hidden>
+                  <label class="control-label" for="custom-name-input">自訂輸出名稱（不含 .cube 字尾）</label>
+                  <span id="custom-name-hint" class="field-hint">
+                    中文字計 2 半形寬、英數符號計 1 半形寬；支援按 Enter 直接轉換（注音／中文選字組字中不會誤觸）。
+                  </span>
+                  <input
+                    type="text"
+                    id="custom-name-input"
+                    name="customName"
+                    class="text-input"
+                    maxlength="64"
+                    pattern="[^&lt;&gt;:&quot;\/\\\|?*]+"
+                    placeholder="例如：京都秋日_Classic-Neg"
+                    enterkeyhint="done"
+                    autocorrect="off"
+                    spellcheck="false"
+                    disabled
+                    aria-invalid="false"
+                    aria-describedby="custom-name-hint"
+                    data-error="custom-name-error"
+                  >
+                  <div id="custom-name-error" class="error-msg">
+                    <span role="img" aria-label="錯誤">⚠</span> 請輸入 1 至 64 個字元的有效名稱，且勿包含 <code>\ / : * ? &quot; &lt; &gt; |</code> 等系統保留符號。
+                  </div>
+                </div>
+
+                <!-- Snapseed 9 半形字元寬度即時截斷預覽器 -->
+                <div class="snapseed-simulator" aria-label="Snapseed 縮圖列名稱寬度即時預覽">
+                  <div class="snapseed-tile" aria-hidden="true">
+                    <div class="snapseed-tile-art">LUT</div>
+                    <div class="snapseed-tile-caption" id="snapseed-thumb-label">人文街拍_…</div>
+                  </div>
+                  <div class="snapseed-details">
+                    <div class="snapseed-row">
+                      <span class="snapseed-label">Snapseed 縮圖顯示：</span>
+                      <span class="snapseed-mono" id="snapseed-preview-text">人文街拍_…</span>
+                    </div>
+                    <div class="snapseed-row">
+                      <span class="snapseed-label">實際輸出檔案：</span>
+                      <span class="snapseed-mono" id="resolved-filename">人文街拍_Classic-Neg.cube</span>
+                    </div>
+                    <div class="snapseed-row">
+                      <span class="snapseed-label">寫入檔頭標記：</span>
+                      <span class="snapseed-mono" id="resolved-cube-title">TITLE "人文街拍_Classic-Neg"</span>
+                    </div>
+                    <div>
+                      <span class="width-meter-badge" id="snapseed-width-badge">前 9 半形可視：「人文街拍_」｜全長 20 半形寬</span>
+                    </div>
+                  </div>
+                </div>
+              </fieldset>
+            </div>
+
+            <!-- 步驟三：一鍵轉換與下載 + 單一狀態播報區 -->
+            <div class="action-area">
+              <button type="submit" id="convert-download-btn" class="primary-btn" aria-disabled="false">
+                轉換並下載 .cube 濾鏡
+              </button>
+              <div id="app-status" class="status-banner" role="status" aria-live="polite" aria-atomic="true">
+                請先上傳富士原始 .cube 檔案，即可一鍵轉換並下載手機專用濾鏡。
+              </div>
+            </div>
+          </section>
+        </div>
+      </form>
+
+      <!-- 步驟四：本地測試照片即時預覽（原生折疊區塊） -->
+      <section class="card" aria-labelledby="preview-heading">
+        <span class="section-eyebrow">STEP 03 · LIVE PHOTO LAB</span>
+        <h2 id="preview-heading">本地測試照片即時預覽</h2>
+        <p class="field-hint">
+          上傳手機照片於本地 <code>&lt;canvas&gt;</code> 即時套用當前參數（長邊自動縮放至最大 1280px），拖曳滑桿或使用鍵盤方向鍵微調原圖對比。
+        </p>
+
+        <details id="photo-preview-details" class="preview-disclosure">
+          <summary class="preview-summary">展開照片試套與原圖／套用後對比工具</summary>
+          <div class="preview-body">
+            <div class="photo-toolbar">
+              <div class="photo-upload-wrap">
+                <input
+                  type="file"
+                  id="photo-file-input"
+                  class="sr-file-input"
+                  accept="image/*"
+                  aria-invalid="false"
+                >
+                <label for="photo-file-input" class="photo-upload-label" id="photo-drop-zone">
+                  選擇或拖曳本機照片
+                </label>
+              </div>
+              <button type="button" id="sample-chart-btn" class="secondary-btn">
+                載入內建色階測試卡
+              </button>
+            </div>
+
+            <div class="slider-block">
+              <div class="slider-header">
+                <label class="control-label" for="compare-slider">原圖／套用後對比位置</label>
+                <output class="slider-output" for="compare-slider" id="compare-slider-output">50%</output>
+              </div>
+              <input
+                type="range"
+                id="compare-slider"
+                min="0"
+                max="100"
+                step="1"
+                value="50"
+                aria-valuetext="原圖 50%，套用濾鏡 50%"
+              >
+            </div>
+
+            <div class="compare-stage" id="compare-stage">
+              <canvas id="canvas-after" class="compare-canvas" width="960" height="540" aria-label="套用富士 LUT 濾鏡後的預覽畫面"></canvas>
+              <canvas id="canvas-before" class="compare-canvas compare-canvas-before" width="960" height="540" aria-hidden="true"></canvas>
+              <div class="compare-divider" aria-hidden="true"></div>
+              <span class="compare-badge compare-badge-before" aria-hidden="true">原圖 sRGB</span>
+              <span class="compare-badge compare-badge-after" aria-hidden="true">套用後</span>
+            </div>
+
+            <p id="preview-meta-note" class="preview-meta-note">
+              目前顯示內建標準 sRGB 色階與膚色測試卡；上傳 .cube 母片後將自動渲染即時預覽。
+            </p>
+          </div>
+        </details>
+      </section>
+    </main>
+
+    <footer class="site-footer">
+      <p>
+        開放原始碼專案（MIT License）· 轉換數學核心對齊富士《F-Log2 Data Sheet Ver.1.1》與《F-Log Data Sheet》白皮書規範。
+      </p>
+      <p>
+        免責聲明：富士軟片模擬之色彩科學與商標權屬 FUJIFILM Corporation 所有；本工具僅於您的瀏覽器本地端執行色彩空間數學轉換，官方原始 <code>.cube</code> 檔案請自行至富士官方網站下載。
+      </p>
+    </footer>
+  </div>
+</body>
+</html>

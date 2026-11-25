@@ -1,6 +1,8 @@
 # FujiLUT-for-Mobile: Fujifilm 3D LUT Converter for Smartphone Photography
 
-將富士官方技術級 **F-Log2 3D LUT**（`.cube`）精確重取樣並烘焙（Bake）為適用於手機直出照片（sRGB / Rec.709，如 Snapseed、Lightroom Mobile、VN 等）的輕量化膠片模擬濾鏡。
+將富士官方技術級 **F-Log2 / F-Log 3D LUT**（`.cube`）精確重取樣並烘焙（Bake）為適用於手機直出照片（sRGB / Rec.709，如 Snapseed、Lightroom Mobile、VN 等）的輕量化軟片模擬濾鏡。
+
+提供 **「100% 純前端靜態網頁版（手機免安裝即用）」** 與 **「Python 高速批次轉換腳本」** 兩種使用方式，底層共用完全一致的白皮書色彩科學與四面體插值數學核心。
 
 ## 📸 解決的核心痛點
 
@@ -10,7 +12,7 @@
 
 * **官方設計**：輸入端為 **F-Log2（極低反差灰片）** → 輸出端為 **Rec.709（正常標準對比）**。LUT 內部包含大幅度的高光下壓、暗部拉扯與高飽和度映射。
 
-* **手機現狀**：智慧型手機拍攝（包含 JPG/HEIC 或經由 Snapseed 開發的 DNG RAW）輸出時，影像已經過演算法色彩映射（Tone Mapping）處於標準 **sRGB** 狀態。
+* **手機現狀**：智慧型手機拍攝（包含 JPG/HEIC 或經由 Snapseed 沖印的 DNG RAW）輸出時，影像已經過演算法色調映射（Tone Mapping）處於標準 **sRGB** 狀態。
 
 * **直接套用的結果**：對比度與飽和度被重複放大兩次，造成**高光嚴重死白、暗部死黑、膚色蠟黃失真**。
 
@@ -20,23 +22,29 @@
 
 ```mermaid
 flowchart LR
-    A["手機照片 (sRGB)"] -->|Gamma 解碼| B["線性光 (Linear)"]
+    A["手機照片 (sRGB)"] -->|Gamma 解碼 + 線性增益| B["線性光 (Linear)"]
     B -->|色域轉換矩陣| C["F-Gamut (BT.2020)"]
-    C -->|F-Log2 OETF 公式| D["富士 F-Log2 訊號"]
-    D -->|65Grid 母片超取樣| E["富士膠片模擬輸出 (Rec.709)"]
+    C -->|F-Log2 / F-Log OETF 公式| D["富士對數訊號"]
+    D -->|65Grid 四面體超取樣| E["富士軟片模擬輸出 (Rec.709)"]
 ```
 
 藉由將 **65Grid 高精度母片** 超取樣（Supersampling）至手機端最流暢相容的 **33Grid**，消除非線性插值色階斷層，同時針對手機介面字數限制最佳化檔名，在選單中一目了然。
 
 ## ✨ 特色亮點
 
-* **針對 Snapseed 介面寬度最佳化檔名**：考量 Snapseed 預覽列僅能顯示約 9 個英文字元寬度（超過即縮略為 `…`），檔名捨棄冗餘編號，直接將 **4 字中文適用情境** 置於最前方（如 `人文街拍_Classic-Neg.cube`），未點擊時即可完整辨識情境，點擊後可檢視完整官方軟片名稱。
+* **100% 純前端零隱私外洩網頁工具**：
 
-* **零依賴重型函式庫**：僅依賴 `numpy`，徹底移除 `scipy`，輕量快速。
+  * 零後端、零建置工具（原生 HTML5 + CSS3 + ES Modules + Web Worker），所有 `.cube` 剖析、四面體重取樣與照片預覽皆在瀏覽器本地端執行，並透過嚴格 CSP（`connect-src 'none'`）強制封鎖任何外部連線。
+
+  * 支援 **來源對數曲線切換**（`F-Log2` / 一代 `F-Log` 自動偵測）、**輸出網格尺寸選擇**（`17Grid` / `33Grid` / `65Grid`）、**線性曝光增益（Linear Gain `0.8x ~ 2.5x`）** 高光滾降微調、**濾鏡混合強度（Intensity `10% ~ 100%`）** 與 **本機測試照片即時分割對比**。
+
+  * 內建 **Snapseed 9 半形字元寬度即時截斷預覽器**，並以 `application/octet-stream` 觸發下載，確保 Android Chrome 與 iOS Safari 完整保留 `.cube` 字尾而不被附加 `.txt`。
+
+* **針對 Snapseed 介面寬度最佳化檔名**：考量 Snapseed 預覽列僅能顯示約 9 個英文字元寬度（超過即縮略為 `…`），檔名捨棄冗餘編號，直接將 **4 字中文適用情境** 置於最前方（如 `人文街拍_Classic-Neg.cube`），未點擊時即可完整辨識情境，點擊後可檢視完整官方軟片名稱。
 
 * **100% 官方白皮書對齊**：
 
-  * 嚴格遵循富士官方《F-Log2 Data Sheet Ver.1.1》第 2-3 節的分段式雙向對數轉換公式（正向 `cut1 = 0.000889`、逆向 `cut2 = 0.100686685370811`），並自動針對 `FLog2-709`（`#Gamma:F-Log2 to F-Log2`）補齊逆轉換與 sRGB 編碼。
+  * 嚴格遵循富士官方《F-Log2 Data Sheet Ver.1.1》第 2-3 節的分段式雙向對數轉換公式（正向 `cut1 = 0.000889`、逆向 `cut2 = 0.100686685370811`）與一代《F-Log Data Sheet》規範，並自動針對 `FLog2-709`（`#Gamma:F-Log2 to F-Log2`）補齊逆轉換與 sRGB 編碼。
 
   * 依據白皮書第 3 節 CIE 1931 色度座標精確推導 ITU-R BT.709 轉 F-Gamut（ITU-R BT.2020）色域矩陣，確保 `float64` 下 D65 白點嚴格守恆，杜絕紅、綠色偏。
 
@@ -46,19 +54,53 @@ flowchart LR
 
   * 沿立方體主對角線切分四面體，確保灰階中性軸 `100%` 落於主對角線端點（消除三線性插值跨色角平均造成的微綠偏色），並將每點頂點查找與乘加次數由 8 次降至 4 次。
 
-* **降維與迴圈不變數快取**：
+* **降維與背景多執行緒最佳化**：
 
   * 1D 軸預計算將 sRGB 指數解碼運算從 107,811 次降至 33 次。
 
-  * 多檔案批次轉換時，跨檔案四面體頂點索引與權重快取複用（耗時趨近純 I/O）。
+  * 網頁版採用 Web Worker + Transferable `ArrayBuffer` 零複製傳輸，處理 274,625 點母片或拖曳滑桿預覽本機照片時主執行緒零卡頓。
 
 ## 🚀 快速上手
 
-### 1. 下載富士官方 LUT 母片
+### 第一步：下載富士官方 LUT 母片
 
-至富士官方網站下載 3D LUT 壓縮包（建議下載包含最完整軟片模擬的 **GFX ETERNA 55** 或 **X-H2S / X-T5** 韌體支援包），解壓縮後取得 `65Grid/F-Log2` 資料夾。
+至富士官方網站下載 3D LUT 壓縮包（建議下載包含最完整軟片模擬的 **GFX ETERNA 55** 或 **X-H2S / X-T5** 韌體支援包），解壓縮後取得 `65Grid/F-Log2`（或 `33Grid` / `F-Log`）資料夾內的 `.cube` 檔案。
 
-### 2. 環境安裝與執行
+---
+
+### 🌐 方式一：使用純前端靜態網頁版（手機／電腦免安裝推薦）
+
+1. 開啟部署於 GitHub Pages 的線上工具網址（或於本機啟動靜態伺服器）。
+2. 點擊上傳區或拖曳單一富士原始 `.cube` 母片（如 `FLog2_to_CLASSIC-Neg._65grid_V.1.00.cube`），系統將自動偵測網格尺寸、預選 `F-Log2` / `F-Log` 曲線並帶入推薦情境短名。
+3. 依需求調整 **輸出網格尺寸**（預設 `33Grid`）、**線性曝光增益（Linear Gain）**、**濾鏡混合強度** 與 **命名模式**（可即時檢視 Snapseed 9 半形字元截斷預覽）。
+4. （選填）展開下方 **「本地測試照片即時預覽」**，載入本機手機照片並使用原生滑桿或鍵盤方向鍵比對原圖與套用後效果。
+5. 點擊 **「轉換並下載 .cube 濾鏡」**，即可直接儲存至手機檔案系統匯入修圖軟體。
+
+#### 在 GitHub Pages 一鍵啟用部署
+
+本專案採用零建置工具架構（根目錄含 `index.html`、`css/`、`js/` 與 `.nojekyll`），Fork 或推送至 GitHub 後即可直接上線：
+
+1. 進入 GitHub 儲存庫的 **Settings** → 左側選單點選 **Pages**。
+2. 在 **Build and deployment** 區塊，將 **Source** 設為 **Deploy from a branch**。
+3. 在 **Branch** 下拉選單選擇 **`main`** 分支與 **`/ (root)`** 資料夾，點擊 **Save**。
+4. 等待約 30 秒部署完成，即可透過 `https://<你的帳號>.github.io/fuji-lut-for-mobile/` 用手機瀏覽器直接開啟使用。
+
+#### 本機啟動預覽與驗證測試
+
+因瀏覽器對 ES Modules 與 Web Worker 的安全限制，本機開發請經由靜態 HTTP 伺服器開啟（請勿直接以 `file://` 點開）：
+
+```bash
+# 使用 uv 啟動本機靜態網頁伺服器
+uv run python -m http.server 8000
+# 開啟瀏覽器造訪 http://localhost:8000
+
+# 執行 Node.js + Python 雙端 35,937 點數值一致性與資安自動化驗證
+node tests/verify-converter.mjs
+```
+
+---
+
+### 🐍 方式二：使用 Python 批次轉換工具（一次轉換整個資料夾）
 
 推薦使用現代極速 Python 工具 [**uv**](https://github.com/astral-sh/uv)，免手動建置虛擬環境：
 
@@ -69,7 +111,7 @@ cd fuji-lut-for-mobile
 
 # 將官方 65Grid/F-Log2 資料夾放置於專案根目錄下
 
-# 使用 uv 一鍵執行轉換
+# 使用 uv 一鍵執行批次轉換
 uv run --with numpy convert_flog2.py
 ```
 
@@ -88,7 +130,7 @@ python convert_flog2.py
 
 | 輸出情境檔名 | Snapseed 縮略預覽 | 原官方檔名 | 建議適用情境與色調特色 | 
 | ----- | ----- | ----- | ----- | 
-| `人文街拍_Classic-Neg.cube` | `人文街拍_…` | `FLog2_to_CLASSIC-Neg._65grid_V.1.00.cube` | **街拍神色**，高反差、冷暖對比強烈、獨特綠色調與復古底片感 | 
+| `人文街拍_Classic-Neg.cube` | `人文街拍_…` | `FLog2_to_CLASSIC-Neg._65grid_V.1.00.cube` | **街拍首選**，高反差、冷暖對比強烈、獨特綠色調與復古底片感 | 
 | `真實紀實_Classic-Chrome.cube` | `真實紀實_…` | `FLog2_to_CLASSIC-CHROME_65grid_V.1.00.cube` | 紀實攝影必備，低飽和、微冷調雜誌文青感 | 
 | `自然通透_Reala-Ace.cube` | `自然通透_…` | `FLog2_to_REALA-ACE_65grid_V.1.00.cube` | 富士最新旗艦色彩，色彩忠實自然、階調立體通透 | 
 | `柔和人像_Astia.cube` | `柔和人像_…` | `FLog2_to_ASTIA_65grid_V.1.00.cube` | 柔和高光與紅潤膚色表現，家庭生活與人物拍攝首選 | 
@@ -103,7 +145,7 @@ python convert_flog2.py
 
 ## 📲 如何在 Snapseed 中套用
 
-1. 將產出的 `Fuji_LUT_Best_33Grid/` 內的 `.cube` 檔案經由 AirDrop、Google Drive 或傳輸線傳至手機儲存空間。
+1. 透過線上網頁工具直接下載 `.cube` 濾鏡至手機，或將 `Fuji_LUT_Best_33Grid/` 內的 `.cube` 檔案經由 AirDrop、Google Drive 或傳輸線傳至手機儲存空間。
 
 2. 打開 **Snapseed** 並載入照片（JPG / HEIC 或 DNG RAW 皆可）。
 
